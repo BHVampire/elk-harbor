@@ -1,4 +1,4 @@
-# ElkHarbor
+# ELK Harbor
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Elastic Stack: 8.10.4](https://img.shields.io/badge/Elastic%20Stack-8.10.4-00bfb3)](https://www.elastic.co/elastic-stack)
