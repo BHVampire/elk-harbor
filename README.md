@@ -1,6 +1,10 @@
-# ELK Stack for Enterprise Monitoring
+# ElkHarbor
 
-A comprehensive monitoring stack with Elasticsearch, Logstash, and Kibana, optimized for enterprise environments using .NET Core on IIS, Node.js with PM2, and SQL Server.
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Elastic Stack: 8.10.4](https://img.shields.io/badge/Elastic%20Stack-8.10.4-00bfb3)](https://www.elastic.co/elastic-stack)
+[![Platform: Windows](https://img.shields.io/badge/Platform-Windows-blue.svg)](https://www.microsoft.com/windows-server)
+
+A comprehensive enterprise monitoring solution powered by the ELK Stack (Elasticsearch, Logstash, Kibana), designed for modern application environments with .NET Core on IIS, Node.js with PM2, and SQL Server.
 
 ![ELK Stack Logo](https://www.elastic.co/static-res/images/elastic-logo-200.png)
 
@@ -107,9 +111,32 @@ This project also includes configurations for advanced use cases:
 - **Fraud detection**: Models to identify suspicious patterns
 - **Business visualizations**: Dashboards for business KPIs
 
+## 🗺️ Roadmap
+
+Future development of ElkHarbor will include:
+
+### Industry-Specific Examples
+
+Pre-configured templates for various industries will be added:
+
+- **Financial Services** - With transaction monitoring and fraud detection
+- **E-commerce** - Shopping cart and order pipeline monitoring
+- **Healthcare** - HIPAA-compliant monitoring setups
+- **High-volume APIs** - Optimized configurations for high throughput services
+
+### Additional Integrations
+
+Planned integrations include:
+
+- Kubernetes deployment options with Helm charts
+- CI/CD pipeline examples
+- Alert integration with additional services
+
+Contributions to these areas are especially welcome!
+
 ## 🤝 Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ## 📜 License
 
