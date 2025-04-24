@@ -1,0 +1,182 @@
+---
+# Playbook principal para desplegar agentes de monitoreo ELK
+
+- name: Preparar servidores Windows para monitoreo
+  hosts: windows
+  gather_facts: yes
+  tasks:
+    - name: Crear directorio para Beats
+      win_file:
+        path: C:\Program Files\Elastic\Beats
+        state: directory
+
+    - name: Verificar conectividad con el servidor ELK
+      win_shell: Test-NetConnection -ComputerName {{ hostvars['elk-server']['ansible_host'] }} -Port 5044
+      register: elk_connectivity
+      ignore_errors: yes
+
+    - name: Mostrar advertencia si no hay conectividad con ELK
+      debug:
+        msg: "¡ADVERTENCIA! No se puede conectar al servidor ELK. Verifique la red y los firewalls."
+      when: elk_connectivity.rc != 0
+
+- name: Desplegar Filebeat en servidores SQL
+  hosts: sql_servers
+  tasks:
+    - name: Descargar Filebeat
+      win_get_url:
+        url: https://artifacts.elastic.co/downloads/beats/filebeat/filebeat-8.10.4-windows-x86_64.zip
+        dest: C:\Temp\filebeat.zip
+        
+    - name: Extraer Filebeat
+      win_unzip:
+        src: C:\Temp\filebeat.zip
+        dest: C:\Program Files\Elastic\Beats
+        creates: C:\Program Files\Elastic\Beats\filebeat-8.10.4-windows-x86_64
+
+    - name: Copiar configuración de Filebeat para SQL Server
+      win_copy:
+        src: files/filebeat-windows.yml
+        dest: C:\Program Files\Elastic\Beats\filebeat-8.10.4-windows-x86_64\filebeat.yml
+
+    - name: Instalar servicio de Filebeat
+      win_shell: |
+        cd "C:\Program Files\Elastic\Beats\filebeat-8.10.4-windows-x86_64"
+        .\install-service-filebeat.ps1
+      args:
+        creates: C:\ProgramData\filebeat
+
+    - name: Iniciar servicio de Filebeat
+      win_service:
+        name: filebeat
+        state: started
+        start_mode: auto
+
+- name: Desplegar Metricbeat en servidores SQL
+  hosts: sql_servers
+  tasks:
+    - name: Descargar Metricbeat
+      win_get_url:
+        url: https://artifacts.elastic.co/downloads/beats/metricbeat/metricbeat-8.10.4-windows-x86_64.zip
+        dest: C:\Temp\metricbeat.zip
+        
+    - name: Extraer Metricbeat
+      win_unzip:
+        src: C:\Temp\metricbeat.zip
+        dest: C:\Program Files\Elastic\Beats
+        creates: C:\Program Files\Elastic\Beats\metricbeat-8.10.4-windows-x86_64
+
+    - name: Copiar configuración de Metricbeat para SQL Server
+      win_copy:
+        src: files/metricbeat-sql-server.yml
+        dest: C:\Program Files\Elastic\Beats\metricbeat-8.10.4-windows-x86_64\metricbeat.yml
+
+    - name: Instalar servicio de Metricbeat
+      win_shell: |
+        cd "C:\Program Files\Elastic\Beats\metricbeat-8.10.4-windows-x86_64"
+        .\install-service-metricbeat.ps1
+      args:
+        creates: C:\ProgramData\metricbeat
+
+    - name: Iniciar servicio de Metricbeat
+      win_service:
+        name: metricbeat
+        state: started
+        start_mode: auto
+
+# Playbook similar para servidores IIS
+- name: Desplegar agentes en servidores IIS
+  hosts: iis_servers
+  tasks:
+    - name: Descargar Filebeat
+      win_get_url:
+        url: https://artifacts.elastic.co/downloads/beats/filebeat/filebeat-8.10.4-windows-x86_64.zip
+        dest: C:\Temp\filebeat.zip
+
+    - name: Extraer Filebeat
+      win_unzip:
+        src: C:\Temp\filebeat.zip
+        dest: C:\Program Files\Elastic\Beats
+        creates: C:\Program Files\Elastic\Beats\filebeat-8.10.4-windows-x86_64
+
+    - name: Copiar configuración de Filebeat para IIS
+      win_copy:
+        src: files/filebeat-iis.yml
+        dest: C:\Program Files\Elastic\Beats\filebeat-8.10.4-windows-x86_64\filebeat.yml
+
+    - name: Instalar servicio de Filebeat
+      win_shell: |
+        cd "C:\Program Files\Elastic\Beats\filebeat-8.10.4-windows-x86_64"
+        .\install-service-filebeat.ps1
+      args:
+        creates: C:\ProgramData\filebeat
+
+    - name: Iniciar servicio de Filebeat
+      win_service:
+        name: filebeat
+        state: started
+        start_mode: auto
+
+    - name: Descargar Metricbeat
+      win_get_url:
+        url: https://artifacts.elastic.co/downloads/beats/metricbeat/metricbeat-8.10.4-windows-x86_64.zip
+        dest: C:\Temp\metricbeat.zip
+
+    - name: Extraer Metricbeat
+      win_unzip:
+        src: C:\Temp\metricbeat.zip
+        dest: C:\Program Files\Elastic\Beats
+        creates: C:\Program Files\Elastic\Beats\metricbeat-8.10.4-windows-x86_64
+
+    - name: Copiar configuración de Metricbeat para IIS
+      win_copy:
+        src: files/metricbeat-netcore-iis.yml
+        dest: C:\Program Files\Elastic\Beats\metricbeat-8.10.4-windows-x86_64\metricbeat.yml
+
+    - name: Instalar servicio de Metricbeat
+      win_shell: |
+        cd "C:\Program Files\Elastic\Beats\metricbeat-8.10.4-windows-x86_64"
+        .\install-service-metricbeat.ps1
+      args:
+        creates: C:\ProgramData\metricbeat
+
+    - name: Iniciar servicio de Metricbeat
+      win_service:
+        name: metricbeat
+        state: started
+        start_mode: auto
+
+# Playbook para Node.js y PM2
+- name: Desplegar agentes en servidores Node.js
+  hosts: nodejs_servers
+  tasks:
+    - name: Descargar Filebeat
+      win_get_url:
+        url: https://artifacts.elastic.co/downloads/beats/filebeat/filebeat-8.10.4-windows-x86_64.zip
+        dest: C:\Temp\filebeat.zip
+
+    - name: Copiar configuración de Metricbeat para Node.js
+      win_copy:
+        src: files/metricbeat-nodejs-pm2.yml
+        dest: C:\Program Files\Elastic\Beats\metricbeat-8.10.4-windows-x86_64\metricbeat.yml
+
+    # Resto de tareas similar a las anteriores
+
+- name: Verificar instalación
+  hosts: windows
+  tasks:
+    - name: Verificar servicio Filebeat
+      win_service:
+        name: filebeat
+      register: filebeat_status
+
+    - name: Verificar servicio Metricbeat
+      win_service:
+        name: metricbeat
+      register: metricbeat_status
+
+    - name: Mostrar estado de servicios
+      debug:
+        msg: |
+          Filebeat: {{ 'Ejecutando' if filebeat_status.state == 'running' else 'No ejecutando' }}
+          Metricbeat: {{ 'Ejecutando' if metricbeat_status.state == 'running' else 'No ejecutando' }}

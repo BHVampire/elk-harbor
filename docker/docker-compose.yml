@@ -1,0 +1,146 @@
+version: '3.8'
+
+services:
+  # Elasticsearch: Base de datos para almacenamiento y búsqueda de logs
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.10.4
+    container_name: elasticsearch
+    environment:
+      - node.name=elasticsearch
+      - cluster.name=elk-fintech-cluster
+      - discovery.type=single-node
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms2g -Xmx2g"
+      - xpack.security.enabled=true
+      - ELASTIC_PASSWORD=contraseñacompleja123  # ¡Cambia esto en producción!
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data
+      - ./elasticsearch/config/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9200"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - elk
+    restart: unless-stopped
+
+  # Logstash: Procesamiento y transformación de datos
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.10.4
+    container_name: logstash
+    environment:
+      - xpack.monitoring.elasticsearch.hosts=http://elasticsearch:9200
+      - xpack.monitoring.elasticsearch.username=elastic
+      - xpack.monitoring.elasticsearch.password=contraseñacompleja123
+    volumes:
+      - ./logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml
+      - ./logstash/pipeline:/usr/share/logstash/pipeline
+    ports:
+      - "5044:5044"   # Para Filebeat
+      - "5045:5045"   # Para Winlogbeat
+      - "9600:9600"   # API de Logstash
+    networks:
+      - elk
+    depends_on:
+      - elasticsearch
+    restart: unless-stopped
+
+  # Kibana: Interfaz de visualización
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.10.4
+    container_name: kibana
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - ELASTICSEARCH_USERNAME=elastic
+      - ELASTICSEARCH_PASSWORD=contraseñacompleja123
+    volumes:
+      - ./kibana/config/kibana.yml:/usr/share/kibana/config/kibana.yml
+    ports:
+      - "5601:5601"
+    networks:
+      - elk
+    depends_on:
+      - elasticsearch
+    restart: unless-stopped
+
+  # APM Server: Para monitoreo de rendimiento de aplicaciones (opcional)
+  apm-server:
+    image: docker.elastic.co/apm/apm-server:8.10.4
+    container_name: apm-server
+    command: >
+      apm-server -e
+        -E apm-server.rum.enabled=true
+        -E apm-server.secret_token=supersecrettoken
+        -E setup.kibana.host=kibana:5601
+        -E setup.template.settings.index.number_of_replicas=0
+        -E apm-server.kibana.enabled=true
+        -E apm-server.kibana.host=kibana:5601
+        -E output.elasticsearch.hosts=["elasticsearch:9200"]
+        -E output.elasticsearch.username=elastic
+        -E output.elasticsearch.password=contraseñacompleja123
+    ports:
+      - "8200:8200"
+    networks:
+      - elk
+    depends_on:
+      - elasticsearch
+      - kibana
+    restart: unless-stopped
+    
+  # Fleet Server: Para gestionar Beats centralmente
+  fleet-server:
+    image: docker.elastic.co/beats/elastic-agent:8.10.4
+    container_name: fleet-server
+    environment:
+      - FLEET_SERVER_ENABLE=true
+      - FLEET_SERVER_ELASTICSEARCH_HOST=http://elasticsearch:9200
+      - FLEET_SERVER_ELASTICSEARCH_USERNAME=elastic
+      - FLEET_SERVER_ELASTICSEARCH_PASSWORD=contraseñacompleja123
+      - FLEET_SERVER_SERVICE_TOKEN_PATH=/tokens/fleet-server-service-token
+      - KIBANA_FLEET_SETUP=true
+      - KIBANA_HOST=http://kibana:5601
+    volumes:
+      - ./fleet-server/tokens:/tokens
+    ports:
+      - "8220:8220"
+    networks:
+      - elk
+    depends_on:
+      - elasticsearch
+      - kibana
+    restart: unless-stopped
+    
+  # Heartbeat: Para monitoreo de disponibilidad de APIs
+  heartbeat:
+    image: docker.elastic.co/beats/heartbeat:8.10.4
+    container_name: heartbeat
+    environment:
+      - setup.kibana.host=kibana:5601
+      - output.elasticsearch.hosts=["elasticsearch:9200"]
+      - output.elasticsearch.username=elastic
+      - output.elasticsearch.password=contraseñacompleja123
+    volumes:
+      - ./heartbeat/config/heartbeat.yml:/usr/share/heartbeat/heartbeat.yml:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - elk
+    depends_on:
+      - elasticsearch
+      - kibana
+    restart: unless-stopped
+
+volumes:
+  elasticsearch-data:
+    driver: local
+
+networks:
+  elk:
+    driver: bridge

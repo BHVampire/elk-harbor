@@ -1,0 +1,13 @@
+{
+  "ElasticApm": {
+    "ServiceName": "mi-api-netcore",
+    "SecretToken": "supersecrettoken",
+    "ServerUrl": "http://tu-ip-docker:8200",
+    "Environment": "production",
+    "TransactionSampleRate": 1.0,
+    "CaptureBody": "all",
+    "CaptureHeaders": true,
+    "LogLevel": "Error",
+    "EnableMetrics": true
+  }
+}

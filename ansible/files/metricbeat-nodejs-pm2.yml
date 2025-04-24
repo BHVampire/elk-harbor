@@ -1,0 +1,45 @@
+metricbeat.modules:
+- module: system
+  metricsets:
+    - cpu
+    - load
+    - memory
+    - network
+    - process
+  enabled: true
+  period: 10s
+  processes: ['.*']
+
+- module: nodejs
+  metricsets:
+    - gc
+    - heap
+    - memory
+  enabled: true
+  period: 10s
+  hosts: ["localhost:9229"]  # Asegúrate que Node.js esté ejecutándose con inspección habilitada
+
+# PM2 no tiene un módulo nativo, pero podemos monitorear los procesos
+- module: system
+  metricsets:
+    - process_summary
+    - process
+  enabled: true
+  period: 10s
+  processes: ['.*node.*', '.*pm2.*']
+  process.include_top_n:
+    by_cpu: 5
+    by_memory: 5
+
+processors:
+  - add_host_metadata: ~
+  - add_cloud_metadata: ~
+  - add_tags:
+      tags: ['nodejs', 'pm2', 'api']
+
+output.logstash:
+  hosts: ["tu-ip-docker:5044"]
+  ssl.enabled: false  # Cambiar a true para producción
+
+setup.kibana:
+  host: "tu-ip-docker:5601"

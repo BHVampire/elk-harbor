@@ -1,0 +1,86 @@
+metricbeat.modules:
+- module: system
+  metricsets:
+    - cpu
+    - load
+    - memory
+    - network
+    - process
+  enabled: true
+  period: 10s
+  processes: ['.*']
+
+- module: windows
+  metricsets:
+    - perfmon
+    - service
+  enabled: true
+  period: 10s
+  perfmon.counters:
+    # IIS Counters
+    - name: '\ASP.NET Applications(__Total__)\Requests Total'
+    - name: '\ASP.NET Applications(__Total__)\Request Execution Time'
+    - name: '\ASP.NET\Requests Queued'
+    - name: '\ASP.NET\Request Wait Time'
+    - name: '\Web Service(_Total)\Current Connections'
+    - name: '\Web Service(_Total)\Get Requests/sec'
+    - name: '\Web Service(_Total)\Post Requests/sec'
+    # Contadores específicos de IIS
+    - name: '\APP_POOL_WAS(_Total)\Current Application Pool State'
+    - name: '\Web Service\ISAPI Extension Requests/sec'
+    - name: '\Web Service\Connection Attempts/sec'
+    - name: '\APP_POOL_WAS(_Total)\Current Application Pool Uptime'
+    - name: '\W3SVC_W3WP(_Total)\Active Requests'
+    - name: '\W3SVC_W3WP(_Total)\Request Execution Time'
+    - name: '\W3SVC_W3WP(_Total)\Active Threads Count'
+    - name: '\Web Service\Service Uptime'
+    # .NET Counters
+    - name: '\.NET CLR Memory(_Global_)\% Time in GC'
+    - name: '\.NET CLR Exceptions(_Global_)\# of Exceps Thrown / sec'
+    - name: '\.NET CLR Memory(_Global_)\# Total committed Bytes'
+    - name: '\.NET CLR Memory(_Global_)\# Bytes in all Heaps'
+    # Contadores específicos para API
+    - name: '\.NET CLR Exceptions(w3wp*)\# of Exceps Thrown'
+    - name: '\.NET CLR Memory(w3wp*)\# Total Reserved Bytes'
+    - name: '\.NET CLR Memory(w3wp*)\% Time in GC'
+    - name: 'ASP.NET Applications(*)\Requests/Sec'
+    - name: 'ASP.NET Applications(*)\Request Execution Time'
+    - name: 'ASP.NET Applications(*)\Requests In Application Queue'
+
+# Módulo específico para IIS
+- module: iis
+  metricsets:
+    - webserver
+    - website
+    - application_pool
+  enabled: true
+  period: 10s
+  hosts: ["localhost"]
+  # Monitorea todos los sitios web (opcional)
+  website.ids:
+    - "*"
+  # Monitorea todos los application pools (opcional)
+  application_pool.ids:
+    - "*"
+
+processors:
+  - add_host_metadata: ~
+  - add_cloud_metadata: ~
+  - add_tags:
+      tags: ['iis', 'netcore', 'api']
+  # Enriquecimiento con nombres de application pools
+  - add_fields:
+      target: iis
+      fields:
+        app_pool_mapping:
+          DefaultAppPool: "API-Default"
+          NetCoreAPI: "API-Financiera"
+          PaymentAPI: "API-Pagos"
+          # Añade mappings adicionales aquí
+
+output.logstash:
+  hosts: ["tu-ip-docker:5044"]
+  ssl.enabled: false  # Cambiar a true para producción
+
+setup.kibana:
+  host: "tu-ip-docker:5601"

@@ -1,0 +1,8 @@
+server.name: kibana
+server.host: "0.0.0.0"
+elasticsearch.hosts: ["http://elasticsearch:9200"]
+elasticsearch.username: elastic
+elasticsearch.password: contraseñacompleja123
+monitoring.ui.container.elasticsearch.enabled: true
+xpack.security.enabled: true
+xpack.encryptedSavedObjects.encryptionKey: "supersecreto32caracteres1234567890"

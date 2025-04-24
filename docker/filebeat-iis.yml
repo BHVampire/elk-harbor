@@ -1,0 +1,102 @@
+filebeat.inputs:
+- type: log
+  enabled: true
+  paths:
+    - C:\inetpub\logs\LogFiles\W3SVC*\*.log
+  exclude_files: ['.gz$']
+  tags: ["iis-access-logs"]
+  fields:
+    source_type: iis_access_logs
+  fields_under_root: true
+  # Parseo automático de logs de IIS
+  include_lines: ['GET.*', 'POST.*', 'PUT.*', 'DELETE.*', 'OPTIONS.*']
+  
+- type: log
+  enabled: true
+  paths:
+    - C:\Windows\System32\LogFiles\HTTPERR\*.log
+  exclude_files: ['.gz$']
+  tags: ["iis-error-logs"]
+  fields:
+    source_type: iis_error_logs
+  fields_under_root: true
+
+# Módulo específico para IIS
+filebeat.modules:
+  - module: iis
+    access:
+      enabled: true
+      var.paths: ["C:/inetpub/logs/LogFiles/*/*.log"]
+    error:
+      enabled: true
+      var.paths: ["C:/Windows/System32/LogFiles/HTTPERR/*.log"]
+
+# Módulo para logs de aplicación .NET
+  - module: system
+    syslog:
+      enabled: false
+    auth:
+      enabled: false
+
+# Logs de eventos de aplicación relacionados con IIS y .NET
+- type: windows_event_log
+  enabled: true
+  name: Application
+  ignore_older: 72h
+  include_xml: true
+  event_id: 1000-9999
+  provider:
+    - IIS-W3SVC
+    - ASP.NET 4.0.30319.0
+    - ".NET Runtime"
+    - ASP.NET Core
+    - W3SVC
+    - WAS
+  tags: ["iis-events", "netcore-events"]
+  fields:
+    source_type: windows_event_application_iis
+
+# Procesadores para enriquecer los datos
+processors:
+  - add_host_metadata: ~
+  - add_cloud_metadata: ~
+  # Extracción de códigos de respuesta HTTP para análisis
+  - dissect:
+      tokenizer: "%{ip} %{} %{} [%{timestamp}] \"%{method} %{path} %{httpversion}\" %{status_code} %{size} %{} %{referrer} \"%{user_agent}\""
+      field: "message"
+      target_prefix: "iis"
+      when:
+        has_fields: ['source_type']
+        equals:
+          source_type: iis_access_logs
+  # Clasificación de errores HTTP
+  - add_fields:
+      target: http_error
+      fields:
+        critical: false
+      when:
+        and:
+          - has_fields: ['iis.status_code']
+          - range:
+              iis.status_code:
+                gte: 500
+  - add_tags:
+      tags: ['http_error_5xx']
+      when:
+        range:
+          iis.status_code:
+            gte: 500
+  - add_tags:
+      tags: ['http_error_4xx']
+      when:
+        range:
+          iis.status_code:
+            gte: 400
+            lt: 500
+
+output.logstash:
+  hosts: ["tu-ip-docker:5044"]
+  ssl.enabled: false  # Cambiar a true para producción
+
+setup.kibana:
+  host: "tu-ip-docker:5601"

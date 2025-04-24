@@ -1,0 +1,41 @@
+metricbeat.modules:
+- module: system
+  metricsets:
+    - cpu
+    - load
+    - memory
+    - network
+    - process
+  enabled: true
+  period: 10s
+  processes: ['.*']
+
+- module: windows
+  metricsets:
+    - perfmon
+    - service
+  enabled: true
+  period: 10s
+  perfmon.counters:
+    - name: '\Memory\% Committed Bytes In Use'
+    - name: '\Memory\Available Bytes'
+    - name: '\Processor(_Total)\% Processor Time'
+    - name: '\PhysicalDisk(_Total)\Avg. Disk Queue Length'
+
+- module: mssql
+  metricsets:
+    - transaction_log
+    - performance
+  hosts: ["Data Source=localhost;Initial Catalog=master;Integrated Security=True;"]
+  period: 30s
+
+processors:
+  - add_host_metadata: ~
+  - add_cloud_metadata: ~
+
+output.logstash:
+  hosts: ["tu-ip-docker:5044"]
+  ssl.enabled: false  # Cambiar a true para producción
+
+setup.kibana:
+  host: "tu-ip-docker:5601"

@@ -1,0 +1,58 @@
+heartbeat.monitors:
+- type: http
+  id: api-netcore-1
+  name: ".NET Core API Primaria"
+  schedule: '@every 30s'
+  urls: ["http://servidor-netcore:8080/api/health"]
+  check.response.status: [200]
+  check.response.json:
+    - description: "Verifica que el estado sea UP"
+      condition:
+        equals:
+          status: "UP"
+
+- type: http
+  id: api-netcore-2
+  name: ".NET Core API Secundaria"
+  schedule: '@every 30s'
+  urls: ["http://servidor-netcore:8081/api/health"]
+  check.response.status: [200]
+
+- type: http
+  id: api-node-1
+  name: "Node.js API Primaria"
+  schedule: '@every 30s'
+  urls: ["http://servidor-node:3000/health"]
+  check.response.status: [200]
+
+- type: http
+  id: api-node-2
+  name: "Node.js API Secundaria" 
+  schedule: '@every 30s'
+  urls: ["http://servidor-node:3001/health"]
+  check.response.status: [200]
+
+- type: http
+  id: sql-server-web
+  name: "SQL Server Web Interface"
+  schedule: '@every 1m'
+  urls: ["http://sql-server:1433"]
+  check.response.status: [200, 401, 403] # Probablemente requiera autenticación
+
+processors:
+  - add_observer_metadata:
+      geo:
+        name: datacenter-1
+        location: "CDMX"
+  - add_tags:
+      tags: ['api-monitoring', 'production']
+
+output.elasticsearch:
+  hosts: ["elasticsearch:9200"]
+  username: "elastic"
+  password: "contraseñacompleja123"
+  indices:
+    - index: "heartbeat-%{[agent.version]}-%{+yyyy.MM.dd}"
+
+setup.kibana:
+  host: "kibana:5601"

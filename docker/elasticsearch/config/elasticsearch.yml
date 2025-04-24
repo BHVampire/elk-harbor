@@ -1,0 +1,15 @@
+cluster.name: "elk-fintech-cluster"
+network.host: 0.0.0.0
+http.port: 9200
+discovery.type: single-node
+xpack.license.self_generated.type: basic
+xpack.security.enabled: true
+xpack.monitoring.collection.enabled: true
+path.data: /usr/share/elasticsearch/data
+path.logs: /usr/share/elasticsearch/logs
+
+# Configuración para un sistema Fintech (optimizado para búsqueda y análisis)
+indices.query.bool.max_clause_count: 8192
+search.max_buckets: 100000
+thread_pool.search.size: 30
+thread_pool.write.size: 30

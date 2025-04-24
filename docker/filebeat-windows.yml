@@ -1,0 +1,50 @@
+filebeat.inputs:
+- type: log
+  enabled: true
+  paths:
+    - C:\logs\*.log
+    - C:\inetpub\logs\LogFiles\*.log
+  fields:
+    source_type: windows_app_logs
+
+- type: windows_event_log
+  enabled: true
+  name: Application
+  ignore_older: 72h
+  fields:
+    source_type: windows_event_application
+
+- type: windows_event_log
+  enabled: true
+  name: System
+  ignore_older: 72h
+  fields:
+    source_type: windows_event_system
+
+- type: windows_event_log
+  enabled: true
+  name: Security
+  ignore_older: 72h
+  fields:
+    source_type: windows_event_security
+
+filebeat.modules:
+  - module: iis
+    access:
+      enabled: true
+    error:
+      enabled: true
+  - module: mssql
+    log:
+      enabled: true
+
+processors:
+  - add_host_metadata: ~
+  - add_cloud_metadata: ~
+
+output.logstash:
+  hosts: ["tu-ip-docker:5044"]
+  ssl.enabled: false  # Cambiar a true para producción
+
+setup.kibana:
+  host: "tu-ip-docker:5601"
